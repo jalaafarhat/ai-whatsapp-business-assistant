@@ -77,7 +77,6 @@ interface Message {
               <div
                 (click)="selectConversation(conv)"
                 [class.bg-primary-50]="selectedConversation()?.id === conv.id"
-                [class.dark:bg-primary-900/20]="selectedConversation()?.id === conv.id"
                 class="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700">
                 <div class="w-10 h-10 rounded-full bg-primary-500 flex items-center justify-center text-white font-medium shrink-0">
                   {{ (conv.contact.name || conv.contact.phone).charAt(0).toUpperCase() }}

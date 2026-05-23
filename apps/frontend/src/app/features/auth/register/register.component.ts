@@ -91,21 +91,22 @@ import { NotificationService } from '../../../core/services/notification.service
 export class RegisterComponent {
   hidePassword = signal(true);
   loading = signal(false);
-
-  form = this.fb.group({
-    firstName: ['', [Validators.required, Validators.minLength(2)]],
-    lastName: ['', [Validators.required, Validators.minLength(2)]],
-    organizationName: ['', [Validators.required, Validators.minLength(2)]],
-    email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(8)]],
-  });
+  form: ReturnType<FormBuilder['group']>;
 
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
     private router: Router,
     private notification: NotificationService,
-  ) {}
+  ) {
+    this.form = this.fb.group({
+      firstName: ['', [Validators.required, Validators.minLength(2)]],
+      lastName: ['', [Validators.required, Validators.minLength(2)]],
+      organizationName: ['', [Validators.required, Validators.minLength(2)]],
+      email: ['', [Validators.required, Validators.email]],
+      password: ['', [Validators.required, Validators.minLength(8)]],
+    });
+  }
 
   onSubmit() {
     if (this.form.invalid) return;
