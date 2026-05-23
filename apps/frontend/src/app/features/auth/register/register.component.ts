@@ -48,21 +48,21 @@ import { NotificationService } from '../../../core/services/notification.service
 
           <mat-form-field class="w-full" appearance="outline">
             <mat-label>Organization Name</mat-label>
+            <mat-icon matTextPrefix class="mr-2 text-gray-400">business</mat-icon>
             <input matInput formControlName="organizationName" placeholder="Your Company">
-            <mat-icon matPrefix>business</mat-icon>
           </mat-form-field>
 
           <mat-form-field class="w-full" appearance="outline">
             <mat-label>Email</mat-label>
+            <mat-icon matTextPrefix class="mr-2 text-gray-400">email</mat-icon>
             <input matInput formControlName="email" type="email">
-            <mat-icon matPrefix>email</mat-icon>
           </mat-form-field>
 
           <mat-form-field class="w-full" appearance="outline">
             <mat-label>Password</mat-label>
+            <mat-icon matTextPrefix class="mr-2 text-gray-400">lock</mat-icon>
             <input matInput formControlName="password" [type]="hidePassword() ? 'password' : 'text'">
-            <mat-icon matPrefix>lock</mat-icon>
-            <button mat-icon-button matSuffix type="button" (click)="hidePassword.set(!hidePassword())">
+            <button mat-icon-button matTextSuffix type="button" (click)="hidePassword.set(!hidePassword())">
               <mat-icon>{{ hidePassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
             </button>
             <mat-hint>Min 8 characters</mat-hint>

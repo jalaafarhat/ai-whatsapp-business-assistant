@@ -37,15 +37,15 @@ import { NotificationService } from '../../../core/services/notification.service
         <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-5">
           <mat-form-field class="w-full" appearance="outline">
             <mat-label>Email</mat-label>
+            <mat-icon matTextPrefix class="mr-2 text-gray-400">email</mat-icon>
             <input matInput formControlName="email" type="email" placeholder="you&#64;example.com">
-            <mat-icon matPrefix>email</mat-icon>
           </mat-form-field>
 
           <mat-form-field class="w-full" appearance="outline">
             <mat-label>Password</mat-label>
+            <mat-icon matTextPrefix class="mr-2 text-gray-400">lock</mat-icon>
             <input matInput formControlName="password" [type]="hidePassword() ? 'password' : 'text'">
-            <mat-icon matPrefix>lock</mat-icon>
-            <button mat-icon-button matSuffix type="button" (click)="hidePassword.set(!hidePassword())">
+            <button mat-icon-button matTextSuffix type="button" (click)="hidePassword.set(!hidePassword())">
               <mat-icon>{{ hidePassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
             </button>
           </mat-form-field>

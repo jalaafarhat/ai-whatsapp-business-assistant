@@ -90,9 +90,6 @@ import { ThemeService } from '../core/services/theme.service';
           <button mat-icon-button (click)="themeService.toggle()" matTooltip="Toggle theme">
             <mat-icon>{{ themeService.darkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
           </button>
-          <button mat-icon-button matTooltip="Notifications">
-            <mat-icon>notifications_none</mat-icon>
-          </button>
         </mat-toolbar>
 
         <!-- Page content -->

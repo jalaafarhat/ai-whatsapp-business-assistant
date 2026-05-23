@@ -11,13 +11,22 @@ export class EmbeddingService {
   constructor(private readonly configService: ConfigService) {
     const apiKey = this.configService.get<string>('ai.googleApiKey');
     this.genAI = new GoogleGenerativeAI(apiKey!);
-    this.embeddingModel = this.configService.get<string>('ai.embeddingModel') || 'text-embedding-004';
+    this.embeddingModel = this.configService.get<string>('ai.embeddingModel') || 'embedding-001';
   }
 
   async generateEmbedding(text: string): Promise<number[]> {
-    const model = this.genAI.getGenerativeModel({ model: this.embeddingModel });
-    const result = await model.embedContent(text);
-    return result.embedding.values;
+    try {
+      const model = this.genAI.getGenerativeModel({ model: this.embeddingModel });
+      const result = await model.embedContent(text);
+      return result.embedding.values;
+    } catch (error: any) {
+      if (error.message?.includes('not found')) {
+        const fallbackModel = this.genAI.getGenerativeModel({ model: 'embedding-001' });
+        const result = await fallbackModel.embedContent(text);
+        return result.embedding.values;
+      }
+      throw error;
+    }
   }
 
   async generateBatchEmbeddings(texts: string[]): Promise<number[][]> {

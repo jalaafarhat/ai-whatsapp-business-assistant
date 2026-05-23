@@ -4,6 +4,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { ApiService } from '../../core/services/api.service';
+import { NotificationService } from '../../core/services/notification.service';
 
 interface Plan {
   name: string;
@@ -25,48 +26,49 @@ interface Plan {
       </div>
 
       <!-- Current Plan -->
-      <mat-card class="!shadow-sm">
-        <mat-card-content class="p-4 flex items-center justify-between">
+      <div class="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center justify-between">
           <div>
-            <p class="text-sm text-gray-500">Current Plan</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Current Plan</p>
             <p class="text-xl font-bold text-gray-900 dark:text-white">{{ currentPlan() }}</p>
           </div>
           <span class="px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
             {{ subscriptionStatus() }}
           </span>
-        </mat-card-content>
-      </mat-card>
+        </div>
+      </div>
 
       <!-- Plans Grid -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         @for (plan of plans; track plan.name) {
-          <mat-card [class]="plan.recommended ? '!shadow-lg !border-2 !border-primary-500' : '!shadow-sm'">
-            <mat-card-content class="p-6">
-              @if (plan.recommended) {
-                <span class="text-xs font-bold text-primary-600 uppercase">Recommended</span>
+          <div [class]="plan.recommended
+            ? 'bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border-2 border-primary-500'
+            : 'bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700'">
+            @if (plan.recommended) {
+              <span class="text-xs font-bold text-primary-600 dark:text-primary-400 uppercase">Recommended</span>
+            }
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white mt-2">{{ plan.name }}</h3>
+            <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">
+              {{ plan.price }}
+              <span class="text-sm font-normal text-gray-500 dark:text-gray-400">/month</span>
+            </p>
+            <ul class="mt-4 space-y-2">
+              @for (feature of plan.features; track feature) {
+                <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                  <mat-icon class="!text-[16px] text-primary-500">check_circle</mat-icon>
+                  {{ feature }}
+                </li>
               }
-              <h3 class="text-lg font-bold text-gray-900 dark:text-white mt-2">{{ plan.name }}</h3>
-              <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">
-                {{ plan.price }}
-                <span class="text-sm font-normal text-gray-500">/month</span>
-              </p>
-              <ul class="mt-4 space-y-2">
-                @for (feature of plan.features; track feature) {
-                  <li class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                    <mat-icon class="!text-[16px] text-primary-500">check_circle</mat-icon>
-                    {{ feature }}
-                  </li>
-                }
-              </ul>
-              <button
-                mat-flat-button
-                [color]="plan.recommended ? 'primary' : undefined"
-                class="w-full !mt-6"
-                (click)="selectPlan(plan.priceId)">
-                {{ currentPlan() === plan.name ? 'Current Plan' : 'Upgrade' }}
-              </button>
-            </mat-card-content>
-          </mat-card>
+            </ul>
+            <button
+              mat-flat-button
+              [color]="plan.recommended ? 'primary' : undefined"
+              class="w-full !mt-6 !h-10"
+              [disabled]="currentPlan() === plan.name"
+              (click)="selectPlan(plan)">
+              {{ currentPlan() === plan.name ? 'Current Plan' : 'Upgrade' }}
+            </button>
+          </div>
         }
       </div>
     </div>
@@ -98,7 +100,10 @@ export class BillingComponent implements OnInit {
     },
   ];
 
-  constructor(private api: ApiService) {}
+  constructor(
+    private api: ApiService,
+    private notification: NotificationService,
+  ) {}
 
   ngOnInit() {
     this.api.get<any>('billing/subscription').subscribe({
@@ -111,14 +116,21 @@ export class BillingComponent implements OnInit {
     });
   }
 
-  selectPlan(priceId: string) {
-    this.api.post<{ url: string }>('billing/checkout', {
-      priceId,
+  selectPlan(plan: Plan) {
+    this.api.post<any>('billing/checkout', {
+      priceId: plan.priceId,
       successUrl: `${window.location.origin}/billing?success=true`,
       cancelUrl: `${window.location.origin}/billing?canceled=true`,
     }).subscribe({
       next: (res) => {
-        if (res.url) window.location.href = res.url;
+        if (res?.url) {
+          window.location.href = res.url;
+        } else {
+          this.notification.info(`To upgrade to ${plan.name}, configure your Stripe keys in Settings.`);
+        }
+      },
+      error: () => {
+        this.notification.info(`Stripe is not configured yet. Add your Stripe API keys to enable billing.`);
       },
     });
   }

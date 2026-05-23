@@ -40,6 +40,38 @@ body.dark-theme {
   }
 }
 
+// Remove the split line between prefix/suffix and input in outline fields
+.mat-mdc-form-field-icon-prefix,
+.mat-mdc-form-field-text-prefix,
+.mat-mdc-form-field-icon-suffix,
+.mat-mdc-form-field-text-suffix {
+  border: none !important;
+  padding: 0 8px !important;
+}
+
+.mat-mdc-form-field-icon-prefix::after,
+.mat-mdc-form-field-text-prefix::after,
+.mat-mdc-form-field-icon-suffix::before,
+.mat-mdc-form-field-text-suffix::before {
+  display: none !important;
+}
+
+// Remove any separator/divider inside form fields
+.mat-mdc-form-field .mat-mdc-form-field-flex {
+  align-items: center !important;
+}
+
+.mat-mdc-form-field .mdc-line-ripple,
+.mat-mdc-form-field .mdc-line-ripple::before,
+.mat-mdc-form-field .mdc-line-ripple::after {
+  border-bottom: none !important;
+}
+
+// Ensure prefix icons don't create visual dividers
+.mat-mdc-form-field-infix {
+  border-left: none !important;
+}
+
 ::-webkit-scrollbar {
   width: 6px;
 }

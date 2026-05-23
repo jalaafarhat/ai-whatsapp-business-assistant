@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiConsumes } from '@nestjs/swagger';
+import { memoryStorage } from 'multer';
 import { DocumentsService } from './services/documents.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -33,21 +34,21 @@ export class DocumentsController {
   @Post('upload')
   @ApiOperation({ summary: 'Upload a document for RAG processing' })
   @ApiConsumes('multipart/form-data')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
   async upload(
     @CurrentUser('organizationId') orgId: string,
     @UploadedFile(
       new ParseFilePipe({
         validators: [
-          new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }), // 10MB
-          new FileTypeValidator({ fileType: 'application/pdf' }),
+          new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }),
+          new FileTypeValidator({ fileType: /(pdf)$/ }),
         ],
       }),
     )
     file: Express.Multer.File,
   ) {
     return this.documentsService.upload(orgId, {
-      filename: file.filename || `${Date.now()}-${file.originalname}`,
+      filename: `${Date.now()}-${file.originalname}`,
       originalname: file.originalname,
       mimetype: file.mimetype,
       size: file.size,

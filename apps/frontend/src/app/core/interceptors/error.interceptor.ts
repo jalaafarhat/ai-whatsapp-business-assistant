@@ -14,8 +14,6 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         authService.logout();
       } else if (error.status === 403) {
         notification.error('You do not have permission to perform this action');
-      } else if (error.status >= 500) {
-        notification.error('Server error. Please try again later.');
       }
 
       return throwError(() => error);
