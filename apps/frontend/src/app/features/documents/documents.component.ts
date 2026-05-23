@@ -1,12 +1,8 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatChipsModule } from '@angular/material/chips';
 import { DatePipe } from '@angular/common';
 import { ApiService } from '../../core/services/api.service';
 import { NotificationService } from '../../core/services/notification.service';
@@ -27,13 +23,9 @@ interface Document {
   standalone: true,
   imports: [
     FormsModule,
-    MatCardModule,
     MatIconModule,
     MatButtonModule,
     MatProgressSpinnerModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatChipsModule,
     DatePipe,
   ],
   template: `
@@ -51,11 +43,10 @@ interface Document {
         </label>
       </div>
 
-      <!-- Ask AI Section -->
-      <mat-card class="!shadow-sm">
-        <mat-card-content class="p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+        <div class="p-5">
           <div class="flex gap-3">
-            <mat-icon class="text-primary-600 mt-1">smart_toy</mat-icon>
+            <mat-icon class="text-primary-600 dark:text-primary-400 mt-1">smart_toy</mat-icon>
             <div class="flex-1">
               <p class="font-medium text-gray-900 dark:text-white mb-2">Ask AI about your documents</p>
               <div class="flex gap-2">
@@ -64,45 +55,45 @@ interface Document {
                   [(ngModel)]="question"
                   (keyup.enter)="askQuestion()"
                   placeholder="Ask a question about your uploaded documents..."
-                  class="flex-1 px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 border-none focus:ring-2 focus:ring-primary-500 outline-none text-sm text-gray-900 dark:text-white">
+                  class="flex-1 px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 outline-none text-sm text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400">
                 <button mat-flat-button color="primary" (click)="askQuestion()" [disabled]="askingAi()">
                   Ask
                 </button>
               </div>
               @if (aiAnswer()) {
-                <div class="mt-3 p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
-                  <p class="text-sm text-gray-800 dark:text-gray-200">{{ aiAnswer() }}</p>
+                <div class="mt-4 p-4 rounded-lg bg-gray-50 dark:bg-gray-700/60 border border-gray-200 dark:border-gray-600">
+                  <p class="text-xs font-semibold uppercase tracking-wide text-primary-600 dark:text-primary-400 mb-2">AI Answer</p>
+                  <p class="text-sm leading-relaxed text-gray-800 dark:text-gray-100 whitespace-pre-wrap">{{ aiAnswer() }}</p>
                 </div>
               }
             </div>
           </div>
-        </mat-card-content>
-      </mat-card>
+        </div>
+      </div>
 
-      <!-- Documents List -->
       @if (loading()) {
         <div class="flex justify-center py-8">
           <mat-spinner diameter="30"></mat-spinner>
         </div>
       } @else if (documents().length === 0) {
-        <mat-card class="!shadow-sm">
-          <mat-card-content class="p-8 text-center">
-            <mat-icon class="!text-5xl text-gray-300 mb-3">description</mat-icon>
-            <p class="text-gray-500">No documents uploaded yet</p>
-            <p class="text-sm text-gray-400 mt-1">Upload PDFs to build your knowledge base for AI answers</p>
-          </mat-card-content>
-        </mat-card>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+          <div class="p-8 text-center">
+            <mat-icon class="!text-5xl text-gray-300 dark:text-gray-600 mb-3">description</mat-icon>
+            <p class="text-gray-500 dark:text-gray-400">No documents uploaded yet</p>
+            <p class="text-sm text-gray-400 dark:text-gray-500 mt-1">Upload PDFs to build your knowledge base for AI answers</p>
+          </div>
+        </div>
       } @else {
         <div class="grid gap-3">
           @for (doc of documents(); track doc.id) {
-            <mat-card class="!shadow-sm hover:!shadow-md transition-shadow">
-              <mat-card-content class="p-4 flex items-center gap-4">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
+              <div class="p-4 flex items-center gap-4">
                 <div class="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                  <mat-icon class="text-red-600">picture_as_pdf</mat-icon>
+                  <mat-icon class="text-red-600 dark:text-red-400">picture_as_pdf</mat-icon>
                 </div>
                 <div class="flex-1">
                   <p class="font-medium text-gray-900 dark:text-white">{{ doc.originalName }}</p>
-                  <p class="text-xs text-gray-500 mt-0.5">
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                     {{ (doc.size / 1024).toFixed(1) }}KB &middot; {{ doc.chunkCount }} chunks &middot; {{ doc.createdAt | date:'medium' }}
                   </p>
                 </div>
@@ -112,8 +103,8 @@ interface Document {
                 <button mat-icon-button color="warn" (click)="deleteDocument(doc.id)">
                   <mat-icon>delete</mat-icon>
                 </button>
-              </mat-card-content>
-            </mat-card>
+              </div>
+            </div>
           }
         </div>
       }

@@ -11,7 +11,7 @@ export class EmbeddingService {
   constructor(private readonly configService: ConfigService) {
     const apiKey = this.configService.get<string>('ai.googleApiKey');
     this.genAI = new GoogleGenerativeAI(apiKey!);
-    this.embeddingModel = this.configService.get<string>('ai.embeddingModel') || 'embedding-001';
+    this.embeddingModel = this.configService.get<string>('ai.embeddingModel') || 'gemini-embedding-001';
   }
 
   async generateEmbedding(text: string): Promise<number[]> {
@@ -21,7 +21,7 @@ export class EmbeddingService {
       return result.embedding.values;
     } catch (error: any) {
       if (error.message?.includes('not found')) {
-        const fallbackModel = this.genAI.getGenerativeModel({ model: 'embedding-001' });
+        const fallbackModel = this.genAI.getGenerativeModel({ model: 'gemini-embedding-001' });
         const result = await fallbackModel.embedContent(text);
         return result.embedding.values;
       }

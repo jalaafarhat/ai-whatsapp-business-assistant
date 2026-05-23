@@ -1,16 +1,17 @@
-import { IsString, IsUrl } from 'class-validator';
+import { IsIn, IsString, IsUrl } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateCheckoutDto {
-  @ApiProperty({ description: 'Stripe price ID for the plan' })
+  @ApiProperty({ description: 'Plan to subscribe to', enum: ['STARTER', 'PROFESSIONAL', 'ENTERPRISE'] })
   @IsString()
-  priceId: string;
+  @IsIn(['STARTER', 'PROFESSIONAL', 'ENTERPRISE'])
+  plan: string;
 
   @ApiProperty({ description: 'URL to redirect after successful payment' })
-  @IsUrl()
+  @IsUrl({ require_tld: false })
   successUrl: string;
 
   @ApiProperty({ description: 'URL to redirect if payment is canceled' })
-  @IsUrl()
+  @IsUrl({ require_tld: false })
   cancelUrl: string;
 }

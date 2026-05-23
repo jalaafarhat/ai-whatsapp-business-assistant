@@ -42,7 +42,7 @@ export class BillingController {
   ) {
     return this.billingService.createCheckoutSession(
       orgId,
-      dto.priceId,
+      dto.plan,
       dto.successUrl,
       dto.cancelUrl,
     );

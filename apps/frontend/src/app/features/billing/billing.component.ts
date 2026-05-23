@@ -1,8 +1,7 @@
 import { Component, OnInit, signal } from '@angular/core';
-import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatChipsModule } from '@angular/material/chips';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ApiService } from '../../core/services/api.service';
 import { NotificationService } from '../../core/services/notification.service';
 
@@ -10,14 +9,14 @@ interface Plan {
   name: string;
   price: string;
   features: string[];
-  priceId: string;
+  planId: 'STARTER' | 'PROFESSIONAL' | 'ENTERPRISE';
   recommended?: boolean;
 }
 
 @Component({
   selector: 'app-billing',
   standalone: true,
-  imports: [MatCardModule, MatButtonModule, MatIconModule, MatChipsModule],
+  imports: [MatButtonModule, MatIconModule],
   template: `
     <div class="space-y-6">
       <div>
@@ -25,7 +24,6 @@ interface Plan {
         <p class="text-gray-500 dark:text-gray-400 mt-1">Manage your subscription and billing</p>
       </div>
 
-      <!-- Current Plan -->
       <div class="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-200 dark:border-gray-700">
         <div class="flex items-center justify-between">
           <div>
@@ -38,7 +36,6 @@ interface Plan {
         </div>
       </div>
 
-      <!-- Plans Grid -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         @for (plan of plans; track plan.name) {
           <div [class]="plan.recommended
@@ -64,9 +61,9 @@ interface Plan {
               mat-flat-button
               [color]="plan.recommended ? 'primary' : undefined"
               class="w-full !mt-6 !h-10"
-              [disabled]="currentPlan() === plan.name"
+              [disabled]="currentPlan() === plan.planId || upgrading()"
               (click)="selectPlan(plan)">
-              {{ currentPlan() === plan.name ? 'Current Plan' : 'Upgrade' }}
+              {{ currentPlan() === plan.planId ? 'Current Plan' : (upgrading() ? 'Redirecting...' : 'Upgrade') }}
             </button>
           </div>
         }
@@ -77,25 +74,26 @@ interface Plan {
 export class BillingComponent implements OnInit {
   currentPlan = signal('FREE');
   subscriptionStatus = signal('ACTIVE');
+  upgrading = signal(false);
 
   plans: Plan[] = [
     {
       name: 'Starter',
       price: '$29',
-      priceId: 'price_starter',
+      planId: 'STARTER',
       features: ['1,000 messages/mo', '5 AI summaries/day', '2 team members', 'Basic analytics'],
     },
     {
       name: 'Professional',
       price: '$79',
-      priceId: 'price_professional',
+      planId: 'PROFESSIONAL',
       recommended: true,
       features: ['10,000 messages/mo', 'Unlimited AI features', '10 team members', 'Advanced analytics', 'RAG documents', 'Priority support'],
     },
     {
       name: 'Enterprise',
       price: '$199',
-      priceId: 'price_enterprise',
+      planId: 'ENTERPRISE',
       features: ['Unlimited messages', 'Unlimited AI features', 'Unlimited team', 'Custom integrations', 'Dedicated support', 'SLA guarantee'],
     },
   ];
@@ -117,20 +115,27 @@ export class BillingComponent implements OnInit {
   }
 
   selectPlan(plan: Plan) {
-    this.api.post<any>('billing/checkout', {
-      priceId: plan.priceId,
+    this.upgrading.set(true);
+
+    this.api.post<{ url: string }>('billing/checkout', {
+      plan: plan.planId,
       successUrl: `${window.location.origin}/billing?success=true`,
       cancelUrl: `${window.location.origin}/billing?canceled=true`,
     }).subscribe({
       next: (res) => {
         if (res?.url) {
           window.location.href = res.url;
-        } else {
-          this.notification.info(`To upgrade to ${plan.name}, configure your Stripe keys in Settings.`);
+          return;
         }
+        this.upgrading.set(false);
+        this.notification.error('Could not create checkout session. Please try again.');
       },
-      error: () => {
-        this.notification.info(`Stripe is not configured yet. Add your Stripe API keys to enable billing.`);
+      error: (err: HttpErrorResponse) => {
+        this.upgrading.set(false);
+        const message = err.error?.message;
+        this.notification.error(
+          typeof message === 'string' ? message : 'Failed to start checkout. Please try again.',
+        );
       },
     });
   }

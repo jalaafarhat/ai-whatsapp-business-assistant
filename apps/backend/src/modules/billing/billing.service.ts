@@ -1,6 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../database/prisma.service';
+import { getBillingPlan } from '../../config/billing-plans.config';
 import Stripe from 'stripe';
 
 @Injectable()
@@ -12,17 +13,36 @@ export class BillingService {
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
   ) {
-    this.stripe = new Stripe(this.configService.get<string>('stripe.secretKey')!, {
+    const secretKey = this.configService.get<string>('stripe.secretKey');
+    if (!secretKey || secretKey.includes('your-stripe')) {
+      this.logger.warn('Stripe secret key is not configured');
+    }
+
+    this.stripe = new Stripe(secretKey!, {
       apiVersion: '2025-02-24.acacia',
     });
   }
 
-  async createCheckoutSession(organizationId: string, priceId: string, successUrl: string, cancelUrl: string) {
+  async createCheckoutSession(
+    organizationId: string,
+    planId: string,
+    successUrl: string,
+    cancelUrl: string,
+  ) {
+    const plan = getBillingPlan(planId);
+    if (!plan) {
+      throw new BadRequestException(`Unknown plan: ${planId}`);
+    }
+
     const subscription = await this.prisma.subscription.findUnique({
       where: { organizationId },
     });
 
-    let customerId = subscription?.stripeCustomerId;
+    if (!subscription) {
+      throw new BadRequestException('No subscription record found for this organization');
+    }
+
+    let customerId = subscription.stripeCustomerId;
 
     if (!customerId) {
       const org = await this.prisma.organization.findUnique({ where: { id: organizationId } });
@@ -38,11 +58,27 @@ export class BillingService {
     const session = await this.stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ['card'],
-      line_items: [{ price: priceId, quantity: 1 }],
+      line_items: [
+        {
+          price_data: {
+            currency: plan.currency,
+            product_data: {
+              name: `${plan.name} Plan`,
+              description: plan.description,
+            },
+            unit_amount: plan.amount,
+            recurring: { interval: plan.interval },
+          },
+          quantity: 1,
+        },
+      ],
       mode: 'subscription',
       success_url: successUrl,
       cancel_url: cancelUrl,
-      metadata: { organizationId },
+      metadata: {
+        organizationId,
+        plan: plan.id,
+      },
     });
 
     return { sessionId: session.id, url: session.url };
@@ -54,7 +90,7 @@ export class BillingService {
     });
 
     if (!subscription?.stripeCustomerId) {
-      throw new Error('No billing account found');
+      throw new BadRequestException('No billing account found');
     }
 
     const session = await this.stripe.billingPortal.sessions.create({
@@ -75,6 +111,9 @@ export class BillingService {
     );
 
     switch (event.type) {
+      case 'checkout.session.completed':
+        await this.handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session);
+        break;
       case 'customer.subscription.created':
       case 'customer.subscription.updated':
         await this.handleSubscriptionUpdate(event.data.object as Stripe.Subscription);
@@ -85,6 +124,24 @@ export class BillingService {
     }
 
     return { received: true };
+  }
+
+  private async handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+    const organizationId = session.metadata?.organizationId;
+    const plan = session.metadata?.plan;
+
+    if (!organizationId || !session.subscription) {
+      return;
+    }
+
+    await this.prisma.subscription.update({
+      where: { organizationId },
+      data: {
+        stripeSubscriptionId: session.subscription as string,
+        plan: plan as any,
+        status: 'ACTIVE',
+      },
+    });
   }
 
   private async handleSubscriptionUpdate(subscription: Stripe.Subscription) {
@@ -110,7 +167,7 @@ export class BillingService {
   private async handleSubscriptionCanceled(subscription: Stripe.Subscription) {
     await this.prisma.subscription.updateMany({
       where: { stripeSubscriptionId: subscription.id },
-      data: { status: 'CANCELED' },
+      data: { status: 'CANCELED', plan: 'FREE' },
     });
   }
 
