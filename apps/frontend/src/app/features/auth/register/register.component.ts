@@ -24,14 +24,17 @@ import { NotificationService } from '../../../core/services/notification.service
     MatProgressSpinnerModule,
   ],
   template: `
-    <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-600 to-primary-800 p-4">
-      <mat-card class="w-full max-w-md p-8">
+    <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-700 to-primary-900 p-4">
+      <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8">
         <div class="text-center mb-8">
+          <div class="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <mat-icon class="!text-3xl text-primary-600">person_add</mat-icon>
+          </div>
           <h1 class="text-2xl font-bold text-gray-900">Create Account</h1>
-          <p class="text-gray-500 mt-2">Start your free trial today</p>
+          <p class="text-gray-500 mt-2 text-sm">Start your free trial today</p>
         </div>
 
-        <form [formGroup]="form" (ngSubmit)="onSubmit()">
+        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-4">
           <div class="grid grid-cols-2 gap-3">
             <mat-form-field appearance="outline">
               <mat-label>First Name</mat-label>
@@ -68,9 +71,9 @@ import { NotificationService } from '../../../core/services/notification.service
           <button
             mat-flat-button
             color="primary"
-            class="w-full !py-3 !text-base mt-4"
+            class="w-full !h-12 !text-base !rounded-lg !mt-6"
             type="submit"
-            [disabled]="loading()">
+            [disabled]="loading() || form.invalid">
             @if (loading()) {
               <mat-spinner diameter="20" class="inline-block mr-2"></mat-spinner>
             }
@@ -78,13 +81,13 @@ import { NotificationService } from '../../../core/services/notification.service
           </button>
         </form>
 
-        <p class="text-center mt-6 text-gray-600">
+        <p class="text-center mt-8 text-sm text-gray-600">
           Already have an account?
-          <a routerLink="/auth/login" class="text-primary-600 font-medium hover:underline">
+          <a routerLink="/auth/login" class="text-primary-600 font-semibold hover:underline ml-1">
             Sign in
           </a>
         </p>
-      </mat-card>
+      </div>
     </div>
   `,
 })

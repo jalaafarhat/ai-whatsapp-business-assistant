@@ -24,17 +24,20 @@ import { NotificationService } from '../../../core/services/notification.service
     MatProgressSpinnerModule,
   ],
   template: `
-    <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-600 to-primary-800 p-4">
-      <mat-card class="w-full max-w-md p-8">
+    <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-700 to-primary-900 p-4">
+      <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8">
         <div class="text-center mb-8">
+          <div class="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <mat-icon class="!text-3xl text-primary-600">chat</mat-icon>
+          </div>
           <h1 class="text-2xl font-bold text-gray-900">Welcome Back</h1>
-          <p class="text-gray-500 mt-2">Sign in to your AI WhatsApp Assistant</p>
+          <p class="text-gray-500 mt-2 text-sm">Sign in to your AI WhatsApp Assistant</p>
         </div>
 
-        <form [formGroup]="form" (ngSubmit)="onSubmit()">
+        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-5">
           <mat-form-field class="w-full" appearance="outline">
             <mat-label>Email</mat-label>
-            <input matInput formControlName="email" type="email" placeholder="you@example.com">
+            <input matInput formControlName="email" type="email" placeholder="you&#64;example.com">
             <mat-icon matPrefix>email</mat-icon>
           </mat-form-field>
 
@@ -50,9 +53,9 @@ import { NotificationService } from '../../../core/services/notification.service
           <button
             mat-flat-button
             color="primary"
-            class="w-full !py-3 !text-base"
+            class="w-full !h-12 !text-base !rounded-lg"
             type="submit"
-            [disabled]="loading()">
+            [disabled]="loading() || form.invalid">
             @if (loading()) {
               <mat-spinner diameter="20" class="inline-block mr-2"></mat-spinner>
             }
@@ -60,13 +63,13 @@ import { NotificationService } from '../../../core/services/notification.service
           </button>
         </form>
 
-        <p class="text-center mt-6 text-gray-600">
+        <p class="text-center mt-8 text-sm text-gray-600">
           Don't have an account?
-          <a routerLink="/auth/register" class="text-primary-600 font-medium hover:underline">
+          <a routerLink="/auth/register" class="text-primary-600 font-semibold hover:underline ml-1">
             Sign up
           </a>
         </p>
-      </mat-card>
+      </div>
     </div>
   `,
 })

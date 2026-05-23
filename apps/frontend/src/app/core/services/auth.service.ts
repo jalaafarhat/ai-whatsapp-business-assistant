@@ -1,7 +1,7 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, tap, BehaviorSubject } from 'rxjs';
+import { Observable, tap, map } from 'rxjs';
 import { environment } from '@env/environment';
 
 export interface User {
@@ -17,6 +17,12 @@ export interface AuthResponse {
   organization: { id: string; name: string; slug: string };
   accessToken: string;
   refreshToken: string;
+}
+
+interface ApiWrapper<T> {
+  success: boolean;
+  data: T;
+  timestamp: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -38,8 +44,9 @@ export class AuthService {
   }
 
   login(email: string, password: string): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/login`, { email, password }).pipe(
-      tap((res) => this.handleAuthResponse(res)),
+    return this.http.post<ApiWrapper<AuthResponse>>(`${this.apiUrl}/login`, { email, password }).pipe(
+      map((res) => res.data),
+      tap((data) => this.handleAuthResponse(data)),
     );
   }
 
@@ -50,8 +57,9 @@ export class AuthService {
     lastName: string;
     organizationName: string;
   }): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/register`, data).pipe(
-      tap((res) => this.handleAuthResponse(res)),
+    return this.http.post<ApiWrapper<AuthResponse>>(`${this.apiUrl}/register`, data).pipe(
+      map((res) => res.data),
+      tap((data) => this.handleAuthResponse(data)),
     );
   }
 
@@ -60,6 +68,7 @@ export class AuthService {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
+    localStorage.removeItem('organization');
     this.currentUser.set(null);
     this.isAuthenticated.set(false);
     this.router.navigate(['/auth/login']);
@@ -67,11 +76,12 @@ export class AuthService {
 
   refreshToken(): Observable<{ accessToken: string; refreshToken: string }> {
     const refreshToken = localStorage.getItem('refreshToken');
-    return this.http.post<{ accessToken: string; refreshToken: string }>(
+    return this.http.post<ApiWrapper<{ accessToken: string; refreshToken: string }>>(
       `${this.apiUrl}/refresh`,
       {},
       { headers: { Authorization: `Bearer ${refreshToken}` } },
     ).pipe(
+      map((res) => res.data),
       tap((tokens) => {
         localStorage.setItem('accessToken', tokens.accessToken);
         localStorage.setItem('refreshToken', tokens.refreshToken);
