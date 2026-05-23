@@ -30,26 +30,30 @@ export class MessagesService {
   }
 
   async create(dto: CreateMessageDto & { conversationId: string; sentByUserId?: string }) {
+    const direction = dto.direction || 'OUTBOUND';
     const message = await this.prisma.message.create({
       data: {
         conversationId: dto.conversationId,
-        direction: dto.direction,
+        direction,
         type: dto.type || 'TEXT',
         content: dto.content,
         mediaUrl: dto.mediaUrl,
         waMessageId: dto.waMessageId,
         sentByUserId: dto.sentByUserId,
-        status: dto.direction === 'OUTBOUND' ? 'SENT' : 'DELIVERED',
+        status: direction === 'OUTBOUND' ? 'SENT' : 'DELIVERED',
       },
     });
 
+    const updateData: any = {
+      lastMessage: dto.content.substring(0, 200),
+      lastMessageAt: new Date(),
+    };
+    if (direction === 'INBOUND') {
+      updateData.unreadCount = { increment: 1 };
+    }
     await this.prisma.conversation.update({
       where: { id: dto.conversationId },
-      data: {
-        lastMessage: dto.content.substring(0, 200),
-        lastMessageAt: new Date(),
-        unreadCount: dto.direction === 'INBOUND' ? { increment: 1 } : undefined,
-      },
+      data: updateData,
     });
 
     return message;

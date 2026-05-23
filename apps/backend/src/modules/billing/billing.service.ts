@@ -13,7 +13,7 @@ export class BillingService {
     private readonly prisma: PrismaService,
   ) {
     this.stripe = new Stripe(this.configService.get<string>('stripe.secretKey')!, {
-      apiVersion: '2024-12-18.acacia',
+      apiVersion: '2025-02-24.acacia',
     });
   }
 
