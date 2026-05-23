@@ -1,0 +1,24 @@
+{
+  "name": "ai-whatsapp-business-assistant",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI-powered WhatsApp Business Assistant - Multi-tenant SaaS Platform",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:backend": "npm run start:dev --workspace=apps/backend",
+    "dev:frontend": "npm run start --workspace=apps/frontend",
+    "build:backend": "npm run build --workspace=apps/backend",
+    "build:frontend": "npm run build --workspace=apps/frontend",
+    "db:migrate": "npm run prisma:migrate --workspace=apps/backend",
+    "db:generate": "npm run prisma:generate --workspace=apps/backend",
+    "docker:up": "docker-compose -f infrastructure/docker/docker-compose.yml up -d",
+    "docker:down": "docker-compose -f infrastructure/docker/docker-compose.yml down"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
+}

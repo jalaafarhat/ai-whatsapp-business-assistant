@@ -1,0 +1,314 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── ENUMS ──────────────────────────────────────────────────────────
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  MANAGER
+  AGENT
+  VIEWER
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  TRIALING
+  INCOMPLETE
+}
+
+enum SubscriptionPlan {
+  FREE
+  STARTER
+  PROFESSIONAL
+  ENTERPRISE
+}
+
+enum MessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  VIDEO
+  AUDIO
+  DOCUMENT
+  LOCATION
+  TEMPLATE
+  INTERACTIVE
+}
+
+enum ConversationStatus {
+  OPEN
+  CLOSED
+  PENDING
+  RESOLVED
+}
+
+enum DocumentStatus {
+  UPLOADING
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum SentimentType {
+  POSITIVE
+  NEGATIVE
+  NEUTRAL
+  MIXED
+}
+
+// ─── MODELS ─────────────────────────────────────────────────────────
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  logo      String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  users         User[]
+  workspaces    Workspace[]
+  subscription  Subscription?
+  usageRecords  UsageRecord[]
+  documents     Document[]
+  whatsappConfig WhatsappConfig?
+
+  @@map("organizations")
+}
+
+model User {
+  id             String   @id @default(uuid())
+  email          String   @unique
+  passwordHash   String   @map("password_hash")
+  firstName      String   @map("first_name")
+  lastName       String   @map("last_name")
+  avatar         String?
+  role           Role     @default(AGENT)
+  isActive       Boolean  @default(true) @map("is_active")
+  refreshToken   String?  @map("refresh_token")
+  lastLoginAt    DateTime? @map("last_login_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organizationId String   @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  assignedConversations Conversation[] @relation("AssignedAgent")
+  messages              Message[]      @relation("SentByUser")
+
+  @@map("users")
+}
+
+model Workspace {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  conversations Conversation[]
+
+  @@map("workspaces")
+}
+
+model WhatsappConfig {
+  id              String   @id @default(uuid())
+  phoneNumberId   String   @map("phone_number_id")
+  accessToken     String   @map("access_token")
+  businessName    String   @map("business_name")
+  webhookVerified Boolean  @default(false) @map("webhook_verified")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  organizationId String       @unique @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("whatsapp_configs")
+}
+
+model Contact {
+  id          String   @id @default(uuid())
+  waId        String   @map("wa_id")
+  name        String?
+  phone       String
+  email       String?
+  tags        String[] @default([])
+  metadata    Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  conversations Conversation[]
+
+  @@unique([waId])
+  @@map("contacts")
+}
+
+model Conversation {
+  id          String             @id @default(uuid())
+  status      ConversationStatus @default(OPEN)
+  subject     String?
+  lastMessage String?            @map("last_message")
+  lastMessageAt DateTime?        @map("last_message_at")
+  unreadCount Int                @default(0) @map("unread_count")
+  tags        String[]           @default([])
+  metadata    Json?
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+
+  contactId   String      @map("contact_id")
+  contact     Contact     @relation(fields: [contactId], references: [id])
+
+  workspaceId String      @map("workspace_id")
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id])
+
+  assignedToId String?    @map("assigned_to_id")
+  assignedTo   User?      @relation("AssignedAgent", fields: [assignedToId], references: [id])
+
+  messages    Message[]
+  summaries   AiSummary[]
+  sentiments  SentimentAnalysis[]
+
+  @@index([workspaceId, status])
+  @@index([contactId])
+  @@index([lastMessageAt(sort: Desc)])
+  @@map("conversations")
+}
+
+model Message {
+  id          String           @id @default(uuid())
+  waMessageId String?          @unique @map("wa_message_id")
+  direction   MessageDirection
+  status      MessageStatus    @default(SENT)
+  type        MessageType      @default(TEXT)
+  content     String
+  mediaUrl    String?          @map("media_url")
+  metadata    Json?
+  timestamp   DateTime         @default(now())
+  createdAt   DateTime         @default(now()) @map("created_at")
+
+  conversationId String       @map("conversation_id")
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  sentByUserId String?        @map("sent_by_user_id")
+  sentByUser   User?          @relation("SentByUser", fields: [sentByUserId], references: [id])
+
+  @@index([conversationId, timestamp(sort: Desc)])
+  @@map("messages")
+}
+
+model AiSummary {
+  id        String   @id @default(uuid())
+  summary   String
+  keyPoints String[] @map("key_points")
+  actionItems String[] @map("action_items")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  conversationId String       @map("conversation_id")
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@map("ai_summaries")
+}
+
+model SentimentAnalysis {
+  id         String        @id @default(uuid())
+  sentiment  SentimentType
+  score      Float
+  details    Json?
+  createdAt  DateTime      @default(now()) @map("created_at")
+
+  conversationId String       @map("conversation_id")
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@map("sentiment_analyses")
+}
+
+model Document {
+  id          String         @id @default(uuid())
+  filename    String
+  originalName String        @map("original_name")
+  mimeType    String         @map("mime_type")
+  size        Int
+  status      DocumentStatus @default(UPLOADING)
+  chunkCount  Int            @default(0) @map("chunk_count")
+  metadata    Json?
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  chunks DocumentChunk[]
+
+  @@map("documents")
+}
+
+model DocumentChunk {
+  id        String   @id @default(uuid())
+  content   String
+  embedding Float[]
+  chunkIndex Int     @map("chunk_index")
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  documentId String   @map("document_id")
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@map("document_chunks")
+}
+
+model Subscription {
+  id                 String             @id @default(uuid())
+  plan               SubscriptionPlan   @default(FREE)
+  status             SubscriptionStatus @default(TRIALING)
+  stripeCustomerId   String?            @unique @map("stripe_customer_id")
+  stripeSubscriptionId String?          @unique @map("stripe_subscription_id")
+  currentPeriodStart DateTime?          @map("current_period_start")
+  currentPeriodEnd   DateTime?          @map("current_period_end")
+  cancelAtPeriodEnd  Boolean            @default(false) @map("cancel_at_period_end")
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+
+  organizationId String       @unique @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+model UsageRecord {
+  id             String   @id @default(uuid())
+  messagesCount  Int      @default(0) @map("messages_count")
+  aiCallsCount   Int      @default(0) @map("ai_calls_count")
+  documentsCount Int      @default(0) @map("documents_count")
+  period         DateTime
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, period])
+  @@map("usage_records")
+}
